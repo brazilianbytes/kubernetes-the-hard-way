@@ -1,6 +1,10 @@
-# Kubernetes The Hard Way
+# Kubernetes The ~~Hard~~ PI Way
 
-This tutorial walks you through setting up Kubernetes the hard way. This guide is not for people looking for a fully automated command to bring up a Kubernetes cluster. If that's you then check out [Google Kubernetes Engine](https://cloud.google.com/kubernetes-engine), or the [Getting Started Guides](https://kubernetes.io/docs/setup).
+This tutorial is adapted of the original [Kubernetes The Hard Way](https://github.com/kelseyhightower/kubernetes-the-hard-way) from @keyseyhightower, walks you through setting up Kubernetes the hard way. Since RPI3 and arm64 support, I like to create bare metal laboratories, but run kubernetes with few resources is a challenge. I bought a brand new four RPI 4, with 4GB RAM and 32 GB each. Not the same the e2-standard instances, but I think its enought to try. 
+
+----
+
+This guide is not for people looking for a fully automated command to bring up a Kubernetes cluster. If that's you then check out [Google Kubernetes Engine](https://cloud.google.com/kubernetes-engine), or the [Getting Started Guides](https://kubernetes.io/docs/setup).
 
 Kubernetes The Hard Way is optimized for learning, which means taking the long route to ensure you understand each task required to bootstrap a Kubernetes cluster.
 
