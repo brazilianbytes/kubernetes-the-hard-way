@@ -73,9 +73,9 @@ KUBERNETES_PUBLIC_ADDRESS=$(gcloud compute addresses describe kubernetes-the-har
   --format 'value(address)')
 ```
 
-...
-ETCD_SERVER=$INTERNAL_IP
-...
+```
+ETCD_NAME=$(hostname -s)
+```
 
 Create the `kube-apiserver.service` systemd unit file:
 
@@ -101,7 +101,7 @@ ExecStart=/usr/local/bin/kube-apiserver \\
   --etcd-cafile=/var/lib/kubernetes/ca.pem \\
   --etcd-certfile=/var/lib/kubernetes/kubernetes.pem \\
   --etcd-keyfile=/var/lib/kubernetes/kubernetes-key.pem \\
-  --etcd-servers=https://${ETCD_SERVER}:2379 \\
+  --etcd-servers=https://${ETCD_NAME}:2379 \\
   --event-ttl=1h \\
   --encryption-provider-config=/var/lib/kubernetes/encryption-config.yaml \\
   --kubelet-certificate-authority=/var/lib/kubernetes/ca.pem \\
