@@ -1,8 +1,15 @@
 # Provisioning Compute Resources
 
-Kubernetes requires a set of machines to host the Kubernetes control plane and the worker nodes where containers are ultimately run. In this lab you will provision the compute resources required for running a secure and highly available Kubernetes cluster across a single [compute zone](https://cloud.google.com/compute/docs/regions-zones/regions-zones).
+Kubernetes requires a set of machines to host the Kubernetes control plane and the worker nodes where containers are ultimately run. 
 
-> Ensure a default compute zone and region have been set as described in the [Prerequisites](01-prerequisites.md#set-a-default-compute-region-and-zone) lab.
+In this lab, you will set up your Raspberry PI 4 devices, put them on the network and make them ready to start.
+
+In my lab, I expose my Kubernetes Controller Device to the internet using a Virtual Server from my TP-Link Home Router. Using my DDNS configuration, I use the domain name EXTERNAL_IP, like the GCP Load Balancer works.
+
+This lab is simpler than the original and should be used to have fun!
+
+![solutiondesign](images/terminator-screenshot.png)
+
 
 ## Networking
 
@@ -32,87 +39,72 @@ gcloud compute networks subnets create kubernetes \
 
 > The `10.240.0.0/24` IP address range can host up to 254 compute instances.
 
-### Firewall Rules
+### ~~Firewall Rules~~
 
-Create a firewall rule that allows internal communication across all protocols:
 
-```
-gcloud compute firewall-rules create kubernetes-the-hard-way-allow-internal \
-  --allow tcp,udp,icmp \
-  --network kubernetes-the-hard-way \
-  --source-ranges 10.240.0.0/24,10.200.0.0/16
-```
+### ~~Kubernetes Public IP Address~~ DDNS and Virtual Server
 
-Create a firewall rule that allows external SSH, ICMP, and HTTPS:
+~~Allocate a static IP address that will be attached to the external load balancer fronting the Kubernetes API Servers~~
 
-```
-gcloud compute firewall-rules create kubernetes-the-hard-way-allow-external \
-  --allow tcp:22,tcp:6443,icmp \
-  --network kubernetes-the-hard-way \
-  --source-ranges 0.0.0.0/0
-```
+I configured my TP-Router to expose the Controller Node to internet using DDNS and Virtual Servers. The config is very different depending of your router brand or network configuration.
 
-> An [external load balancer](https://cloud.google.com/compute/docs/load-balancing/network/) will be used to expose the Kubernetes API Servers to remote clients.
+## ~~Compute Instances~~ Raspberry PI
 
-List the firewall rules in the `kubernetes-the-hard-way` VPC network:
+The compute instances in this lab will be provisioned using [Raspberry PI OS Lite](https://www.raspberrypi.com/software/operating-systems/) but the unlisted 64 Bit. Each instance will be set up with a fixed private IP address to simplify the Kubernetes bootstrapping process.
 
-```
-gcloud compute firewall-rules list --filter="network:kubernetes-the-hard-way"
-```
+### Raspberry OS 64 Bit
 
-> output
+I used the brand new Raspberry OS Lite based on Debian Bullseye, but the 64-bit arm version. You can download it from [here](https://downloads.raspberrypi.org/raspios_lite_arm64/images/raspios_lite_arm64-2021-11-08/2021-10-30-raspios-bullseye-arm64-lite.zip).
 
-```
-NAME                                    NETWORK                  DIRECTION  PRIORITY  ALLOW                 DENY  DISABLED
-kubernetes-the-hard-way-allow-external  kubernetes-the-hard-way  INGRESS    1000      tcp:22,tcp:6443,icmp        False
-kubernetes-the-hard-way-allow-internal  kubernetes-the-hard-way  INGRESS    1000      tcp,udp,icmp                Fals
-```
+After this, you can write the image to SD Card using the Raspberry PI Imager using this [tutorial](https://www.raspberrypi.com/news/raspberry-pi-imager-imaging-utility/). When you choose the image, choose 'Choose Custom' and point to the zip image file that you downloaded before.
 
-### Kubernetes Public IP Address
+![Raspberry PI Imager screenshot](images/raspberry-pi-imager.png)
 
-Allocate a static IP address that will be attached to the external load balancer fronting the Kubernetes API Servers:
+### Common Config
+
+There are few customizations to do at the first boot for each RPi. 
+
+> The default user is `pi` and the password is `raspberry`.
+
+After boot your RPi, you need to use the raspi-config command:
 
 ```
-gcloud compute addresses create kubernetes-the-hard-way \
-  --region $(gcloud config get-value compute/region)
+sudo raspi-config
 ```
 
-Verify the `kubernetes-the-hard-way` static IP address was created in your default compute region:
+![raspi-config main menu](images/raspi-config-main.png)
+
+You should change these options:
+* 3 Interface Options > I2 SSH > Enable
+* 4 Performance Options > P2 GPU Memory > 16 (More RAM for us!)
+* 6 Advanced Options > A1 Expand FileSystem (More space to your SD card)
+
+To set the machine name, use this command:
 
 ```
-gcloud compute addresses list --filter="name=('kubernetes-the-hard-way')"
+hostnamectl set-hostname <name>
 ```
 
-> output
+You need to use static IPs to your RPIs. You can config static IP using Debian or define it using your Router and Mac Addresses.
+
+> Config static IP in Debian not work for me for unknown reason. I fix then it using my router. This is better if you use the Virtual Server like me. :-)
+
+At the end, we need to config these fixed IPs to /etc/hosts file (each node and your computer):
 
 ```
-NAME                     ADDRESS/RANGE   TYPE      PURPOSE  NETWORK  REGION    SUBNET  STATUS
-kubernetes-the-hard-way  XX.XXX.XXX.XXX  EXTERNAL                    us-west1          RESERVED
+192.168.0.250   k8s-master
+192.168.0.251   k8s-node-001
+192.168.0.252   k8s-node-002
+192.168.0.253   k8s-node-003
+
 ```
-
-## Compute Instances
-
-The compute instances in this lab will be provisioned using [Ubuntu Server](https://www.ubuntu.com/server) 20.04, which has good support for the [containerd container runtime](https://github.com/containerd/containerd). Each compute instance will be provisioned with a fixed private IP address to simplify the Kubernetes bootstrapping process.
 
 ### Kubernetes Controllers
 
-Create three compute instances which will host the Kubernetes control plane:
+~~Create three compute instances which will host the Kubernetes control plane:~~
 
-```
-for i in 0 1 2; do
-  gcloud compute instances create controller-${i} \
-    --async \
-    --boot-disk-size 200GB \
-    --can-ip-forward \
-    --image-family ubuntu-2004-lts \
-    --image-project ubuntu-os-cloud \
-    --machine-type e2-standard-2 \
-    --private-network-ip 10.240.0.1${i} \
-    --scopes compute-rw,storage-ro,service-management,service-control,logging-write,monitoring \
-    --subnet kubernetes \
-    --tags kubernetes-the-hard-way,controller
-done
-```
+Configure one of RPI devices to be the Controller. I named it as k8s-master.
+
 
 ### Kubernetes Workers
 
@@ -161,67 +153,23 @@ worker-2      us-west1-c  e2-standard-2               10.240.0.22  XX.XXX.XX.XX 
 
 ## Configuring SSH Access
 
-SSH will be used to configure the controller and worker instances. When connecting to compute instances for the first time SSH keys will be generated for you and stored in the project or instance metadata as described in the [connecting to instances](https://cloud.google.com/compute/docs/instances/connecting-to-instance) documentation.
-
-Test SSH access to the `controller-0` compute instances:
-
-```
-gcloud compute ssh controller-0
-```
-
-If this is your first time connecting to a compute instance SSH keys will be generated for you. Enter a passphrase at the prompt to continue:
+SSH will be used to configure the controller and worker instances. 
+Test SSH access to the `k8s-master` compute instances:
 
 ```
-WARNING: The public SSH key file for gcloud does not exist.
-WARNING: The private SSH key file for gcloud does not exist.
-WARNING: You do not have an SSH key for gcloud.
-WARNING: SSH keygen will be executed to generate a key.
-Generating public/private rsa key pair.
-Enter passphrase (empty for no passphrase):
-Enter same passphrase again:
+ssh pi@k8s-master
 ```
 
-At this point the generated SSH keys will be uploaded and stored in your project:
+After the SSH ip fingerprint have been accepted you'll be logged into the `k8s-master` instance:
 
 ```
-Your identification has been saved in /home/$USER/.ssh/google_compute_engine.
-Your public key has been saved in /home/$USER/.ssh/google_compute_engine.pub.
-The key fingerprint is:
-SHA256:nz1i8jHmgQuGt+WscqP5SeIaSy5wyIJeL71MuV+QruE $USER@$HOSTNAME
-The key's randomart image is:
-+---[RSA 2048]----+
-|                 |
-|                 |
-|                 |
-|        .        |
-|o.     oS        |
-|=... .o .o o     |
-|+.+ =+=.+.X o    |
-|.+ ==O*B.B = .   |
-| .+.=EB++ o      |
-+----[SHA256]-----+
-Updating project ssh metadata...-Updated [https://www.googleapis.com/compute/v1/projects/$PROJECT_ID].
-Updating project ssh metadata...done.
-Waiting for SSH key to propagate.
-```
-
-After the SSH keys have been updated you'll be logged into the `controller-0` instance:
-
-```
-Welcome to Ubuntu 20.04.2 LTS (GNU/Linux 5.4.0-1042-gcp x86_64)
+Linux k8s-master 5.10.63-v8+ #1459 SMP PREEMPT Wed Oct 6 16:42:49 BST 2021 aarch64
 ...
 ```
 
-Type `exit` at the prompt to exit the `controller-0` compute instance:
+Use `Ctrl+D` or `exit` at the prompt to exit the `k8s-master` compute instance:
 
 ```
-$USER@controller-0:~$ exit
+pi@k8s-master:~$ exit
 ```
-> output
-
-```
-logout
-Connection to XX.XX.XX.XXX closed
-```
-
 Next: [Provisioning a CA and Generating TLS Certificates](04-certificate-authority.md)

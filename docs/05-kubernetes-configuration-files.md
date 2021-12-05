@@ -13,9 +13,7 @@ Each kubeconfig requires a Kubernetes API Server to connect to. To support high 
 Retrieve the `kubernetes-the-hard-way` static IP address:
 
 ```
-KUBERNETES_PUBLIC_ADDRESS=$(gcloud compute addresses describe kubernetes-the-hard-way \
-  --region $(gcloud config get-value compute/region) \
-  --format 'value(address)')
+KUBERNETES_PUBLIC_ADDRESS=k8s.solutionarchitect.rocks
 ```
 
 ### The kubelet Kubernetes Configuration File
@@ -27,8 +25,8 @@ When generating kubeconfig files for Kubelets the client certificate matching th
 Generate a kubeconfig file for each worker node:
 
 ```
-for instance in worker-0 worker-1 worker-2; do
-  kubectl config set-cluster kubernetes-the-hard-way \
+for instance in k8s-node-001 k8s-node-002 k8s-node-003; do
+  kubectl config set-cluster kubernetes-the-rpi-way \
     --certificate-authority=ca.pem \
     --embed-certs=true \
     --server=https://${KUBERNETES_PUBLIC_ADDRESS}:6443 \
@@ -52,9 +50,10 @@ done
 Results:
 
 ```
-worker-0.kubeconfig
-worker-1.kubeconfig
-worker-2.kubeconfig
+k8s-node-001.kubeconfig
+k8s-node-002.kubeconfig
+k8s-node-003.kubeconfig
+
 ```
 
 ### The kube-proxy Kubernetes Configuration File
@@ -96,7 +95,7 @@ Generate a kubeconfig file for the `kube-controller-manager` service:
 
 ```
 {
-  kubectl config set-cluster kubernetes-the-hard-way \
+  kubectl config set-cluster kubernetes-the-rpi-way \
     --certificate-authority=ca.pem \
     --embed-certs=true \
     --server=https://127.0.0.1:6443 \
@@ -109,7 +108,7 @@ Generate a kubeconfig file for the `kube-controller-manager` service:
     --kubeconfig=kube-controller-manager.kubeconfig
 
   kubectl config set-context default \
-    --cluster=kubernetes-the-hard-way \
+    --cluster=kubernetes-the-rpi-way \
     --user=system:kube-controller-manager \
     --kubeconfig=kube-controller-manager.kubeconfig
 
@@ -130,7 +129,7 @@ Generate a kubeconfig file for the `kube-scheduler` service:
 
 ```
 {
-  kubectl config set-cluster kubernetes-the-hard-way \
+  kubectl config set-cluster kubernetes-the-rpi-way \
     --certificate-authority=ca.pem \
     --embed-certs=true \
     --server=https://127.0.0.1:6443 \
@@ -143,7 +142,7 @@ Generate a kubeconfig file for the `kube-scheduler` service:
     --kubeconfig=kube-scheduler.kubeconfig
 
   kubectl config set-context default \
-    --cluster=kubernetes-the-hard-way \
+    --cluster=kubernetes-the-rpi-way \
     --user=system:kube-scheduler \
     --kubeconfig=kube-scheduler.kubeconfig
 
@@ -163,7 +162,7 @@ Generate a kubeconfig file for the `admin` user:
 
 ```
 {
-  kubectl config set-cluster kubernetes-the-hard-way \
+  kubectl config set-cluster kubernetes-the-rpi-way \
     --certificate-authority=ca.pem \
     --embed-certs=true \
     --server=https://127.0.0.1:6443 \
@@ -176,7 +175,7 @@ Generate a kubeconfig file for the `admin` user:
     --kubeconfig=admin.kubeconfig
 
   kubectl config set-context default \
-    --cluster=kubernetes-the-hard-way \
+    --cluster=kubernetes-the-rpi-way \
     --user=admin \
     --kubeconfig=admin.kubeconfig
 
@@ -198,17 +197,15 @@ admin.kubeconfig
 Copy the appropriate `kubelet` and `kube-proxy` kubeconfig files to each worker instance:
 
 ```
-for instance in worker-0 worker-1 worker-2; do
-  gcloud compute scp ${instance}.kubeconfig kube-proxy.kubeconfig ${instance}:~/
+for instance in k8s-node-001 k8s-node-002 k8s-node-003; do
+  scp ${instance}.kubeconfig kube-proxy.kubeconfig pi@${instance}:~/
 done
 ```
 
-Copy the appropriate `kube-controller-manager` and `kube-scheduler` kubeconfig files to each controller instance:
+Copy the appropriate `kube-controller-manager` and `kube-scheduler` kubeconfig files to the master controller instance:
 
 ```
-for instance in controller-0 controller-1 controller-2; do
-  gcloud compute scp admin.kubeconfig kube-controller-manager.kubeconfig kube-scheduler.kubeconfig ${instance}:~/
-done
+scp admin.kubeconfig kube-controller-manager.kubeconfig kube-scheduler.kubeconfig pi@k8s-master:~/
 ```
 
 Next: [Generating the Data Encryption Config and Key](06-data-encryption-keys.md)

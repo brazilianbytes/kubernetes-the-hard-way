@@ -1,12 +1,15 @@
-# Kubernetes The ~~Hard~~ PI Way
+# Kubernetes The ~~Hard~~ RPi Way
 
-This tutorial is adapted of the original [Kubernetes The Hard Way](https://github.com/kelseyhightower/kubernetes-the-hard-way) from @keyseyhightower, walks you through setting up Kubernetes the hard way. Since RPI3 and arm64 support, I like to create bare metal laboratories, but run kubernetes with few resources is a challenge. I bought a brand new four RPI 4, with 4GB RAM and 32 GB each. Not the same the e2-standard instances, but I think its enought to try. 
+This tutorial is adapted of the original [Kubernetes The Hard Way](https://github.com/kelseyhightower/kubernetes-the-hard-way) from @keyseyhightower, walks you through setting up Kubernetes the hard way. Since RPI3 and arm64 support, I like to create bare metal laboratories, but run kubernetes with RPi with few computational resources is a challenge. I bought a brand new four RPI 4, with 4GB RAM and 32 GB each. Not the same the e2-standard instances, but I think its enought to try. 
 
 ----
 
 This guide is not for people looking for a fully automated command to bring up a Kubernetes cluster. If that's you then check out [Google Kubernetes Engine](https://cloud.google.com/kubernetes-engine), or the [Getting Started Guides](https://kubernetes.io/docs/setup).
 
 Kubernetes The Hard Way is optimized for learning, which means taking the long route to ensure you understand each task required to bootstrap a Kubernetes cluster.
+
+Kubernetes The RPi Way is my excuse to follow this guide and create a tiny datacenter infrastructure... :-)
+
 
 > The results of this tutorial should not be viewed as production ready, and may receive limited support from the community, but don't let that stop you from learning!
 
@@ -31,7 +34,7 @@ Kubernetes The Hard Way guides you through bootstrapping a highly available Kube
 
 ## Labs
 
-This tutorial assumes you have access to the [Google Cloud Platform](https://cloud.google.com). While GCP is used for basic infrastructure requirements the lessons learned in this tutorial can be applied to other platforms.
+~~This tutorial assumes you have access to the [Google Cloud Platform](https://cloud.google.com). While GCP is used for basic infrastructure requirements the lessons learned in this tutorial can be applied to other platforms.~~
 
 * [Prerequisites](docs/01-prerequisites.md)
 * [Installing the Client Tools](docs/02-client-tools.md)
