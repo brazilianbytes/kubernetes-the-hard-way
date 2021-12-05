@@ -36,11 +36,11 @@ cat > ca-csr.json <<EOF
   },
   "names": [
     {
-      "C": "US",
-      "L": "Portland",
+      "C": "BR",
+      "L": "Osasco",
       "O": "Kubernetes",
       "OU": "CA",
-      "ST": "Oregon"
+      "ST": "Sao Paulo"
     }
   ]
 }
@@ -78,11 +78,11 @@ cat > admin-csr.json <<EOF
   },
   "names": [
     {
-      "C": "US",
-      "L": "Portland",
+      "C": "BR",
+      "L": "Osasco",
       "O": "system:masters",
-      "OU": "Kubernetes The Hard Way",
-      "ST": "Oregon"
+      "OU": "Kubernetes The RPI Way",
+      "ST": "Sao Paulo"
     }
   ]
 }
@@ -122,11 +122,11 @@ cat > ${instance}-csr.json <<EOF
   },
   "names": [
     {
-      "C": "US",
-      "L": "Portland",
+      "C": "BR",
+      "L": "Osasco",
       "O": "system:nodes",
-      "OU": "Kubernetes The Hard Way",
-      "ST": "Oregon"
+      "OU": "Kubernetes The RPI Way",
+      "ST": "Sao Paulo"
     }
   ]
 }
@@ -175,11 +175,11 @@ cat > kube-controller-manager-csr.json <<EOF
   },
   "names": [
     {
-      "C": "US",
-      "L": "Portland",
+      "C": "BR",
+      "L": "Osasco",
       "O": "system:kube-controller-manager",
-      "OU": "Kubernetes The Hard Way",
-      "ST": "Oregon"
+      "OU": "Kubernetes The RPI Way",
+      "ST": "Sao Paulo"
     }
   ]
 }
@@ -219,11 +219,11 @@ cat > kube-proxy-csr.json <<EOF
   },
   "names": [
     {
-      "C": "US",
-      "L": "Portland",
+      "C": "BR",
+      "L": "Osasco",
       "O": "system:node-proxier",
-      "OU": "Kubernetes The Hard Way",
-      "ST": "Oregon"
+      "OU": "Kubernetes The RPI Way",
+      "ST": "Sao Paulo"
     }
   ]
 }
@@ -262,11 +262,11 @@ cat > kube-scheduler-csr.json <<EOF
   },
   "names": [
     {
-      "C": "US",
-      "L": "Portland",
+      "C": "BR",
+      "L": "Osasco",
       "O": "system:kube-scheduler",
-      "OU": "Kubernetes The Hard Way",
-      "ST": "Oregon"
+      "OU": "Kubernetes The RPI Way",
+      "ST": "Sao Paulo"
     }
   ]
 }
@@ -314,11 +314,11 @@ cat > kubernetes-csr.json <<EOF
   },
   "names": [
     {
-      "C": "US",
-      "L": "Portland",
+      "C": "BR",
+      "L": "Osasco",
       "O": "Kubernetes",
-      "OU": "Kubernetes The Hard Way",
-      "ST": "Oregon"
+      "OU": "Kubernetes The RPI Way",
+      "ST": "Sao Paulo"
     }
   ]
 }
