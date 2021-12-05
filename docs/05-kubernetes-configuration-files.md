@@ -10,7 +10,8 @@ In this section you will generate kubeconfig files for the `controller manager`,
 
 Each kubeconfig requires a Kubernetes API Server to connect to. To support high availability the IP address assigned to the external load balancer fronting the Kubernetes API Servers will be used.
 
-Retrieve the `kubernetes-the-hard-way` static IP address:
+~~Retrieve the `kubernetes-the-hard-way` static IP address~~
+Use the DDNS Domain name:
 
 ```
 KUBERNETES_PUBLIC_ADDRESS=k8s.solutionarchitect.rocks
@@ -39,7 +40,7 @@ for instance in k8s-node-001 k8s-node-002 k8s-node-003; do
     --kubeconfig=${instance}.kubeconfig
 
   kubectl config set-context default \
-    --cluster=kubernetes-the-hard-way \
+    --cluster=kubernetes-the-rpi-way \
     --user=system:node:${instance} \
     --kubeconfig=${instance}.kubeconfig
 
@@ -62,7 +63,7 @@ Generate a kubeconfig file for the `kube-proxy` service:
 
 ```
 {
-  kubectl config set-cluster kubernetes-the-hard-way \
+  kubectl config set-cluster kubernetes-the-rpi-way \
     --certificate-authority=ca.pem \
     --embed-certs=true \
     --server=https://${KUBERNETES_PUBLIC_ADDRESS}:6443 \
@@ -75,7 +76,7 @@ Generate a kubeconfig file for the `kube-proxy` service:
     --kubeconfig=kube-proxy.kubeconfig
 
   kubectl config set-context default \
-    --cluster=kubernetes-the-hard-way \
+    --cluster=kubernetes-the-rpi-way \
     --user=system:kube-proxy \
     --kubeconfig=kube-proxy.kubeconfig
 

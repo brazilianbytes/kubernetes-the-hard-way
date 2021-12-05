@@ -220,7 +220,7 @@ cat > kube-proxy-csr.json <<EOF
       "C": "BR",
       "L": "Osasco",
       "O": "system:node-proxier",
-      "OU": "Kubernetes The RPI Way",
+      "OU": "Kubernetes The RPi  Way",
       "ST": "Sao Paulo"
     }
   ]
@@ -263,7 +263,7 @@ cat > kube-scheduler-csr.json <<EOF
       "C": "BR",
       "L": "Osasco",
       "O": "system:kube-scheduler",
-      "OU": "Kubernetes The RPI Way",
+      "OU": "Kubernetes The RPi Way",
       "ST": "Sao Paulo"
     }
   ]
@@ -297,7 +297,7 @@ Generate the Kubernetes API Server certificate and private key:
 ```
 {
 
-KUBERNETES_PUBLIC_ADDRESS=<ex.: k8s.ddns.net>
+KUBERNETES_PUBLIC_ADDRESS=k8s.solutionarchitect.rocks
 
 KUBERNETES_HOSTNAMES=kubernetes,kubernetes.default,kubernetes.default.svc,kubernetes.default.svc.cluster,kubernetes.svc.cluster.local
 
@@ -316,7 +316,14 @@ cat > kubernetes-csr.json <<EOF
       "OU": "Kubernetes The RPI Way",
       "ST": "Sao Paulo"
     }
-  ]
+  ],
+  "Hosts": [
+    "${KUBERNETES_PUBLIC_ADDRESS}",
+    "kubernetes.default",
+    "kubernetes.default.svc",
+    "kubernetes.default.svc.cluster",
+    "kubernetes.svc.cluster.local"
+    ]
 }
 EOF
 
@@ -361,7 +368,7 @@ cat > service-account-csr.json <<EOF
       "C": "US",
       "L": "Portland",
       "O": "Kubernetes",
-      "OU": "Kubernetes The Hard Way",
+      "OU": "Kubernetes The RPi Way",
       "ST": "Oregon"
     }
   ]
@@ -391,18 +398,16 @@ service-account.pem
 Copy the appropriate certificates and private keys to each worker instance:
 
 ```
-for instance in worker-0 worker-1 worker-2; do
-  gcloud compute scp ca.pem ${instance}-key.pem ${instance}.pem ${instance}:~/
+for instance in k8s-node-001 k8s-node-002 k8s-node-003; do
+  scp ca.pem ${instance}-key.pem ${instance}.pem pi@${instance}:~/
 done
 ```
 
 Copy the appropriate certificates and private keys to each controller instance:
 
 ```
-for instance in controller-0 controller-1 controller-2; do
-  gcloud compute scp ca.pem ca-key.pem kubernetes-key.pem kubernetes.pem \
-    service-account-key.pem service-account.pem ${instance}:~/
-done
+  scp ca.pem ca-key.pem kubernetes-key.pem kubernetes.pem \
+    service-account-key.pem service-account.pem pi@k8s-master:~/
 ```
 
 > The `kube-proxy`, `kube-controller-manager`, `kube-scheduler`, and `kubelet` client certificates will be used to generate client authentication configuration files in the next lab.
