@@ -9,20 +9,20 @@ In this section you will verify the ability to [encrypt secret data at rest](htt
 Create a generic secret:
 
 ```
-kubectl create secret generic kubernetes-the-hard-way \
+kubectl create secret generic kubernetes-the-rpi-way \
   --from-literal="mykey=mydata"
 ```
 
-Print a hexdump of the `kubernetes-the-hard-way` secret stored in etcd:
+Print a hexdump of the `kubernetes-the-rpi-way` secret stored in etcd:
 
 ```
-gcloud compute ssh controller-0 \
+ssh pi@k8s-master \
   --command "sudo ETCDCTL_API=3 etcdctl get \
   --endpoints=https://127.0.0.1:2379 \
   --cacert=/etc/etcd/ca.pem \
   --cert=/etc/etcd/kubernetes.pem \
   --key=/etc/etcd/kubernetes-key.pem\
-  /registry/secrets/default/kubernetes-the-hard-way | hexdump -C"
+  /registry/secrets/default/kubernetes-the-rpi-way | hexdump -C"
 ```
 
 > output

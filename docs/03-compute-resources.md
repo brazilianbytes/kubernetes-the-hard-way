@@ -99,57 +99,55 @@ At the end, we need to config these fixed IPs to /etc/hosts file (each node and 
 
 ```
 
-### Kubernetes Controllers
+One last config is cgroups. To enable Raspberry PI cgroups, you need to put these config at the final of first line of `/boot/cmdline.txt`
+
+```
+... cgroup_enable=cpuset cgroup_enable=memory cgroup_memory=1 swapaccount=1
+```
+
+Check cgroups is working with this command:
+
+```
+cat /proc/cgroups
+```
+
+output (it's ugly, don't blame me)
+```
+#subsys_name	hierarchy	num_cgroups	enabled
+cpuset	0	  242	1
+cpu	    0	  242	1
+cpuacct	0	  242	1
+blkio	0	  242	1
+memory	0	  242	1
+devices	0	  242	1
+freezer	0	  242	1
+net_cls	0	  242	1
+perf_event	0	242	1
+net_prio	0	242	1
+pids	0	242	1
+
+```
+> the memory line needs to has a '1'
+
+### Disable Swap
+
+To permanently disable the swap on Debian Bullseye, run the following commands:
+
+```
+sudo dphys-swapfile swapoff
+sudo systemctl disable dphys-swapfile.service
+```
+
+## Kubernetes Controllers
 
 ~~Create three compute instances which will host the Kubernetes control plane:~~
 
 Configure one of RPI devices to be the Controller. I named it as k8s-master.
 
 
-### Kubernetes Workers
+## Kubernetes Workers
 
-Each worker instance requires a pod subnet allocation from the Kubernetes cluster CIDR range. The pod subnet allocation will be used to configure container networking in a later exercise. The `pod-cidr` instance metadata will be used to expose pod subnet allocations to compute instances at runtime.
-
-> The Kubernetes cluster CIDR range is defined by the Controller Manager's `--cluster-cidr` flag. In this tutorial the cluster CIDR range will be set to `10.200.0.0/16`, which supports 254 subnets.
-
-Create three compute instances which will host the Kubernetes worker nodes:
-
-```
-for i in 0 1 2; do
-  gcloud compute instances create worker-${i} \
-    --async \
-    --boot-disk-size 200GB \
-    --can-ip-forward \
-    --image-family ubuntu-2004-lts \
-    --image-project ubuntu-os-cloud \
-    --machine-type e2-standard-2 \
-    --metadata pod-cidr=10.200.${i}.0/24 \
-    --private-network-ip 10.240.0.2${i} \
-    --scopes compute-rw,storage-ro,service-management,service-control,logging-write,monitoring \
-    --subnet kubernetes \
-    --tags kubernetes-the-hard-way,worker
-done
-```
-
-### Verification
-
-List the compute instances in your default compute zone:
-
-```
-gcloud compute instances list --filter="tags.items=kubernetes-the-hard-way"
-```
-
-> output
-
-```
-NAME          ZONE        MACHINE_TYPE   PREEMPTIBLE  INTERNAL_IP  EXTERNAL_IP    STATUS
-controller-0  us-west1-c  e2-standard-2               10.240.0.10  XX.XX.XX.XXX   RUNNING
-controller-1  us-west1-c  e2-standard-2               10.240.0.11  XX.XXX.XXX.XX  RUNNING
-controller-2  us-west1-c  e2-standard-2               10.240.0.12  XX.XXX.XX.XXX  RUNNING
-worker-0      us-west1-c  e2-standard-2               10.240.0.20  XX.XX.XXX.XXX  RUNNING
-worker-1      us-west1-c  e2-standard-2               10.240.0.21  XX.XX.XX.XXX   RUNNING
-worker-2      us-west1-c  e2-standard-2               10.240.0.22  XX.XXX.XX.XX   RUNNING
-```
+Configure the other three of RPI devices to be the Worker nodes. I named it as k8s-node-001, k8s-node-002 and k8s-node-003.
 
 ## Configuring SSH Access
 

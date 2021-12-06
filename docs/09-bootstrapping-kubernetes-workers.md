@@ -4,15 +4,15 @@ In this lab you will bootstrap three Kubernetes worker nodes. The following comp
 
 ## Prerequisites
 
-The commands in this lab must be run on each worker instance: `worker-0`, `worker-1`, and `worker-2`. Login to each worker instance using the `gcloud` command. Example:
+The commands in this lab must be run on each worker instance: `k8s-node-001`, `k8s-node-002`, and `k8s-node-003`. Login to each worker instance using the `ssh` command. Example:
 
 ```
-gcloud compute ssh worker-0
+ssh pi@k8s-node-001
 ```
 
-### Running commands in parallel with tmux
+### Running commands in parallel with ~~tmux~~ Terminator
 
-[tmux](https://github.com/tmux/tmux/wiki) can be used to run commands on multiple compute instances at the same time. See the [Running commands in parallel with tmux](01-prerequisites.md#running-commands-in-parallel-with-tmux) section in the Prerequisites lab.
+[Terminator](https://github.com/tmux/tmux/wiki) can be used to run commands on multiple compute instances at the same time. See the [Running commands in parallel with Terminator](01-prerequisites.md#running-commands-in-parallel-with-tmux-terminator) section in the Prerequisites lab.
 
 ## Provisioning a Kubernetes Worker Node
 
@@ -49,13 +49,11 @@ sudo swapoff -a
 
 ```
 wget -q --show-progress --https-only --timestamping \
-  https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.21.0/crictl-v1.21.0-linux-amd64.tar.gz \
-  https://github.com/opencontainers/runc/releases/download/v1.0.0-rc93/runc.amd64 \
-  https://github.com/containernetworking/plugins/releases/download/v0.9.1/cni-plugins-linux-amd64-v0.9.1.tgz \
-  https://github.com/containerd/containerd/releases/download/v1.4.4/containerd-1.4.4-linux-amd64.tar.gz \
-  https://storage.googleapis.com/kubernetes-release/release/v1.21.0/bin/linux/amd64/kubectl \
-  https://storage.googleapis.com/kubernetes-release/release/v1.21.0/bin/linux/amd64/kube-proxy \
-  https://storage.googleapis.com/kubernetes-release/release/v1.21.0/bin/linux/amd64/kubelet
+  https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.21.0/crictl-v1.21.0-linux-arm64.tar.gz \
+  https://github.com/containernetworking/plugins/releases/download/v0.9.1/cni-plugins-linux-arm64-v0.9.1.tgz \
+  https://storage.googleapis.com/kubernetes-release/release/v1.21.0/bin/linux/arm64/kubectl \
+  https://storage.googleapis.com/kubernetes-release/release/v1.21.0/bin/linux/arm64/kube-proxy \
+  https://storage.googleapis.com/kubernetes-release/release/v1.21.0/bin/linux/arm64/kubelet
 ```
 
 Create the installation directories:
@@ -74,24 +72,29 @@ Install the worker binaries:
 
 ```
 {
-  mkdir containerd
-  tar -xvf crictl-v1.21.0-linux-amd64.tar.gz
-  tar -xvf containerd-1.4.4-linux-amd64.tar.gz -C containerd
-  sudo tar -xvf cni-plugins-linux-amd64-v0.9.1.tgz -C /opt/cni/bin/
-  sudo mv runc.amd64 runc
-  chmod +x crictl kubectl kube-proxy kubelet runc 
-  sudo mv crictl kubectl kube-proxy kubelet runc /usr/local/bin/
-  sudo mv containerd/bin/* /bin/
+  tar -xvf crictl-v1.21.0-linux-arm64.tar.gz
+  
+  sudo tar -xvf cni-plugins-linux-arm64-v0.9.1.tgz -C /opt/cni/bin/
+  chmod +x crictl kubectl kube-proxy kubelet 
+  sudo mv crictl kubectl kube-proxy kubelet /usr/local/bin/
 }
 ```
 
-### Configure CNI Networking
-
-Retrieve the Pod CIDR range for the current compute instance:
+### containerd and runc and the lack of arm64 official binaries
+The container and runc releases doesn't have an official binary to arm64 architecure on original versions of this tutorial. But Debian repository has and it's the same version than this original tutorial. To install runc:
 
 ```
-POD_CIDR=$(curl -s -H "Metadata-Flavor: Google" \
-  http://metadata.google.internal/computeMetadata/v1/instance/attributes/pod-cidr)
+sudo apt update
+sudo apt -y install runc=1.0.0~rc93+ds1-5+b2 containerd=1.4.5~ds1-2+deb11u1
+sudo apt-mark hold runc containerd
+``` 
+
+### Configure CNI Networking
+
+~~Retrieve~~ Define the Pod CIDR range ~~for the current compute instance~~ as 10.200.<instance number>.0/24. For example for k8s-node-001:
+
+```
+POD_CIDR=10.200.1.0/24
 ```
 
 Create the `bridge` network configuration file:
@@ -139,12 +142,19 @@ sudo mkdir -p /etc/containerd/
 ```
 cat << EOF | sudo tee /etc/containerd/config.toml
 [plugins]
-  [plugins.cri.containerd]
-    snapshotter = "overlayfs"
-    [plugins.cri.containerd.default_runtime]
-      runtime_type = "io.containerd.runtime.v1.linux"
-      runtime_engine = "/usr/local/bin/runc"
-      runtime_root = ""
+  [plugins."io.containerd.grpc.v1.cri"]
+    [plugins."io.containerd.grpc.v1.cri".containerd]
+      snapshotter = "overlayfs"
+      [plugins."io.containerd.grpc.v1.cri".containerd.default_runtime]
+        runtime_type = "io.containerd.runtime.v1.linux"
+        runtime_engine = "/usr/sbin/runc"
+        runtime_root = ""
+
+      [plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+            SystemdCgroup = true
+
 EOF
 ```
 
@@ -203,7 +213,7 @@ clusterDomain: "cluster.local"
 clusterDNS:
   - "10.32.0.10"
 podCIDR: "${POD_CIDR}"
-resolvConf: "/run/systemd/resolve/resolv.conf"
+resolvConf: "/etc/resolv.k8s.conf"
 runtimeRequestTimeout: "15m"
 tlsCertFile: "/var/lib/kubelet/${HOSTNAME}.pem"
 tlsPrivateKeyFile: "/var/lib/kubelet/${HOSTNAME}-key.pem"
@@ -288,7 +298,7 @@ EOF
 }
 ```
 
-> Remember to run the above commands on each worker node: `worker-0`, `worker-1`, and `worker-2`.
+> Remember to run the above commands on each worker node: `k8s-node-001`, `k8s-node-002`, and `k8s-node-003`.
 
 ## Verification
 
@@ -297,17 +307,17 @@ EOF
 List the registered Kubernetes nodes:
 
 ```
-gcloud compute ssh controller-0 \
+ssh pi@k8s-master \
   --command "kubectl get nodes --kubeconfig admin.kubeconfig"
 ```
 
 > output
 
 ```
-NAME       STATUS   ROLES    AGE   VERSION
-worker-0   Ready    <none>   22s   v1.21.0
-worker-1   Ready    <none>   22s   v1.21.0
-worker-2   Ready    <none>   22s   v1.21.0
+NAME           STATUS   ROLES    AGE   VERSION
+k8s-node-001   Ready    <none>   93s   v1.21.0
+k8s-node-002   Ready    <none>   93s   v1.21.0
+k8s-node-003   Ready    <none>   93s   v1.21.0
 ```
 
 Next: [Configuring kubectl for Remote Access](10-configuring-kubectl.md)
